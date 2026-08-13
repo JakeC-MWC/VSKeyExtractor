@@ -6,23 +6,19 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace VSKeyExtractor
-{
-    internal struct Product
-    {
+namespace VSKeyExtractor {
+    internal struct Product {
         public string Name { get; }
         public Guid GUID { get; }
         public string MPC { get; }
-        public Product(string name, Guid guid, string mpc)
-        {
+        public Product(string name, Guid guid, string mpc) {
             Name = name;
             GUID = guid;
             MPC = mpc;
         }
     }
 
-    class Program
-    {
+    class Program {
         private static readonly IReadOnlyList<Product> Products = new List<Product>()
         {
             new Product("Visual Studio Express 2012 for Windows Phone"  , new Guid("77550D6B-6352-4E77-9DA3-537419DF564B"), "04937"),
@@ -56,31 +52,25 @@ namespace VSKeyExtractor
 
         };
 
-        static void Main()
-        {
+        static void Main() {
             foreach (var product in Products) ExtractLicense(product);
         }
 
-        private static void ExtractLicense(Product product)
-        {
+        private static void ExtractLicense(Product product) {
             var encrypted = Registry.GetValue($"HKEY_CLASSES_ROOT\\Licenses\\{product.GUID}\\{product.MPC}", "", null);
             if (encrypted == null) return;
-            try
-            {
+            try {
                 var secret = ProtectedData.Unprotect((byte[])encrypted, null, DataProtectionScope.CurrentUser);
                 var str = Encoding.Unicode.GetString(secret);
                 foreach (var sub in str.Split('\0'))
-                    if (!string.IsNullOrWhiteSpace(sub))
-                    {
+                    if (!string.IsNullOrWhiteSpace(sub)) {
                         Debug.WriteLine($"sub: {sub}");
                         var match = Regex.Match(sub, @"\w{5}-\w{5}-\w{5}-\w{5}-\w{5}");
-                        if (match.Success)
-                        {
+                        if (match.Success) {
                             Console.WriteLine($"Found key for {product.Name}: {match.Captures[0]}");
                         }
                     }
-            }
-            catch (Exception) {/*just void em*/}
+            } catch (Exception) {/*just void em*/}
         }
     }
 }
